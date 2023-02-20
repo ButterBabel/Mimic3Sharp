@@ -3,9 +3,12 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
+using Microsoft.PhoneticMatching;
+using Mimic3Sharp.eSpeak;
 using NAudio.Wave;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -64,6 +67,9 @@ void LoadOnnx(string model_dir)
         noise_w = inference["noise_w"].GetValue<double>();
     }
 
+    //eSpeakVoice.Initialize(@"C:\Program Files\eSpeak NG\libespeak-ng.dll");
+    //eSpeakVoice.Speak("I think it's very nice out today.");
+
     //float max_wav_value;
     //{
     //    var caudio = config["audio"];
@@ -72,13 +78,52 @@ void LoadOnnx(string model_dir)
 
     long speaker_id;
     {
-        speaker_id = 88;
+        speaker_id = 5;
     }
 
-    var pronounciation = Microsoft.PhoneticMatching.EnPronouncer.Instance.Pronounce("I think it's very nice out today.");
+    //const string line = """But this cousin... I would not marry that man! He was a boor, a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.""";
+    const string line = "I think it's very nice out today.";
+
+    var pronounciation = Microsoft.PhoneticMatching.EnPronouncer.Instance.Pronounce(line);
+    foreach(var phone in pronounciation.Phones)
+    {
+        var xphone = new XPhone(phone.Type, phone.Phonation, phone.Place, phone.Manner, phone.Height, phone.Backness, phone.Roundedness, phone.IsRhotic, phone.IsSyllabic);
+        Console.WriteLine(xphone);
+    }
+    phonemes.Add("r", phonemes["ɹ"]);
+
+    var phlist = new List<int>();
+    phlist.Add(phonemes["^"]);
+    phlist.Add(phonemes["#"]);
+    string sh = pronounciation.Ipa;
+    while(sh.Length > 0)
+    {
+        if (sh[0] == '\u032F')
+        {
+            phlist.Add(phonemes["#"]);
+            //phlist.Add(phonemes["·"]);
+            //phlist.Add(phonemes["·"]);
+            //phlist.Add(phonemes["·"]);
+            //phlist.Add(phonemes["·"]);
+            sh = sh[1..];
+            continue;
+        }
+
+        var match = phonemes.OrderByDescending(ph => ph.Key.Length).Where(ph => sh.StartsWith(ph.Key, StringComparison.Ordinal)).FirstOrDefault();
+        if(match is { Key: null })
+        {
+            break;
+        }
+
+        sh = sh[match.Key.Length..];
+        phlist.Add(match.Value);
+        phlist.Add(phonemes["_"]);
+    }
+    phlist.Add(phonemes["#"]);
+    phlist.Add(phonemes["$"]);
     var text_phoneme_ids = pronounciation.Ipa.Split('\u032F');// EnumerateRunes().Select(rune => phonemes[rune.ToString()]).Cast<long>().ToArray();
-    //var x = new[] { (long)phonemes[text_phoneme_ids[0]] }.Cast<long>().ToArray();
-    var x = phonemes.Values.ToArray();
+    var x = phlist.Select(i => (long)i).ToArray();
+    //var x = phonemes.Values.ToArray();
     ;
 
     var text_array = np.expand_dims(np.array(x, dtype: np.int64), 0);//
@@ -98,15 +143,22 @@ void LoadOnnx(string model_dir)
     };
 
     // Create an InferenceSession from the Model Path.
-    using var model = new InferenceSession(Path.Join(model_dir, "generator.onnx"));
+    float[] audio_buffer;
+    {
+        using var model = new InferenceSession(Path.Join(model_dir, "generator.onnx"));
 
-    // Run session and send input data in to get inference output. Call ToList then get the Last item. Then use the AsEnumerable extension method to return the Value result as an Enumerable of NamedOnnxValue.
-    using var outputs = model.Run(input);
+        // Run session and send input data in to get inference output. Call ToList then get the Last item. Then use the AsEnumerable extension method to return the Value result as an Enumerable of NamedOnnxValue.
+        using var outputs = model.Run(input);
 
-    var output = outputs.Last();
+        var output = outputs.Last();
+        var onnxTensor = output.AsTensor<float>().ToDenseTensor();
+        var span = onnxTensor.Buffer.Span;
+        audio_buffer = span.ToArray();
+    }
 
     var tf = new tensorflow();
-    var audio = np.squeeze(new NDArray(output.AsTensor<float>().ToArray()));
+    var audio = np.squeeze(new NDArray(audio_buffer));
+
     //audio_float_to_int16
     {
         const float max_wav_value = 32767.0f;
@@ -298,3 +350,6 @@ CsvReader GetLjspeechReader(string path)
     var csv = new CsvReader(ofs, config);
     return csv;
 }
+
+public record XPhone(PhoneType Type, Phonation Phonation, PlaceOfArticulation? Place, MannerOfArticulation? Manner, VowelHeight? Height, VowelBackness? Backness, VowelRoundedness? Roundedness, bool? IsRhotic, bool IsSyllabic);
+
