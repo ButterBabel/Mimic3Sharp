@@ -23,9 +23,6 @@ using static Mimic3Sharp.Regexes;
 
 Console.WriteLine("Hello, World!");
 
-RunVoskDemo(@"C:\Users\Zebedee\Downloads\vosk-model-small-en-us-0.15");
-;
-
 //LarynxTrainDatasetToSubfolders(@"S:\Work\larynx2_train\training_vctk_with_bannerlord");
 //;
 
@@ -35,6 +32,11 @@ RunVoskDemo(@"C:\Users\Zebedee\Downloads\vosk-model-small-en-us-0.15");
 //BannerlordToLjspeechFormat(@"S:\Games\Mount & Blade II Bannerlord _ beta 1.1.0\Modules\SandBox\ModuleData\Languages\VoicedLines\EN\PC");
 
 LoadOnnx(@"S:\Work\mimic3\en_US vctk_low\");
+;
+
+RunVoskDemo(@"C:\Users\Zebedee\Downloads\vosk-model-small-en-us-0.15");
+;
+
 
 void RunVoskDemo(string model_name)
 {
@@ -48,7 +50,8 @@ void LoadOnnx(string model_dir)
         .Select(arr => new
         {
             id = int.Parse(arr[0]),
-            phoneme = arr[1]
+            //maluuba doesn't use 'COMBINING DOUBLE INVERTED BREVE' (U+0361)
+            phoneme = arr[1].Replace("\u0361", null)
         })
         .ToDictionary(a => a.phoneme, a => a.id);
 
@@ -87,27 +90,60 @@ void LoadOnnx(string model_dir)
 
     long speaker_id;
     {
-        speaker_id = 6;
+        speaker_id = 11;
     }
 
+    //checking espeak -> maluuba
+    //{
+    //    Console.OutputEncoding = Encoding.UTF8;
+    //    foreach (var kvp in phonemes)
+    //    {
+    //        try
+    //        {
+    //            var pronunciation = EnPronunciation.FromIpa(kvp.Key);
+    //            Console.WriteLine($"Phone {kvp.Key}");
+    //            Console.WriteLine(pronunciation.Ipa);
+    //            var match = StringComparer.InvariantCultureIgnoreCase.Equals(kvp.Key, pronunciation.Ipa);
+    //            Console.WriteLine(match ? "Match" : "Not Match");
+    //            Console.WriteLine();
+    //            if(!match)
+    //            {
+    //                Console.Write("Runes ");
+    //                foreach (var rune in kvp.Key.EnumerateRunes())
+    //                {
+    //                    Console.Write(rune.Value);
+    //                    Console.Write(" ");
+    //                }
+    //                Console.WriteLine();
+    //            }
+    //        }
+    //        catch (ArgumentException)
+    //        {
+    //            Console.WriteLine($"Bad phone {kvp.Key}");
+    //        }
+    //    }
+    //}
+
     //const string line = """But this cousin... I would not marry that man! He was a boor, a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.""";
-    const string line = "I think it's very nice out today.";
+    //const string line = "I think it's very nice out today.";
+    //const string line = "Despite the fact I hate maths, I quite like learning about fractions.";
+    const string line = "Roger roger, raise the ragged, rhotic career of a better butter bandit.";
 
     var pronounciation = Microsoft.PhoneticMatching.EnPronouncer.Instance.Pronounce(line);
-    foreach(var phone in pronounciation.Phones)
+    foreach (var phone in pronounciation.Phones)
     {
         var xphone = new XPhone(phone.Type, phone.Phonation, phone.Place, phone.Manner, phone.Height, phone.Backness, phone.Roundedness, phone.IsRhotic, phone.IsSyllabic);
         Console.WriteLine(xphone);
     }
-    phonemes.Add("r", phonemes["ɹ"]);
 
-    
+    phonemes.Add("r", phonemes["ɹ"]);
+    phonemes.Add("ɝ", phonemes["ɹ"]);
 
     var phlist = new List<int>();
     phlist.Add(phonemes["^"]);
     phlist.Add(phonemes["#"]);
-    string sh = pronounciation.Ipa;
-    while(sh.Length > 0)
+    string sh = pronounciation.Ipa.ToLowerInvariant();
+    while (sh.Length > 0)
     {
         if (sh[0] == '\u032F')
         {
@@ -121,7 +157,7 @@ void LoadOnnx(string model_dir)
         }
 
         var match = phonemes.OrderByDescending(ph => ph.Key.Length).Where(ph => sh.StartsWith(ph.Key, StringComparison.Ordinal)).FirstOrDefault();
-        if(match is { Key: null })
+        if (match is { Key: null })
         {
             break;
         }
