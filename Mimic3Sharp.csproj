@@ -16,6 +16,7 @@
     <PackageReference Include="SciSharp.TensorFlow.Redist" Version="2.11.0" />
     <PackageReference Include="System.Numerics.Tensors" Version="7.0.0-rtm.22518.5" />
     <PackageReference Include="TensorFlow.NET" Version="0.100.2" />
+    <PackageReference Include="Vosk" Version="0.3.38" />
   </ItemGroup>
 
 </Project>

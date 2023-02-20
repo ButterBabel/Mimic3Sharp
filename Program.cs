@@ -4,6 +4,7 @@ using CsvHelper.Configuration;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.PhoneticMatching;
+using Mimic3Sharp;
 using Mimic3Sharp.eSpeak;
 using NAudio.Wave;
 using System.Globalization;
@@ -22,6 +23,9 @@ using static Mimic3Sharp.Regexes;
 
 Console.WriteLine("Hello, World!");
 
+RunVoskDemo(@"C:\Users\Zebedee\Downloads\vosk-model-small-en-us-0.15");
+;
+
 //LarynxTrainDatasetToSubfolders(@"S:\Work\larynx2_train\training_vctk_with_bannerlord");
 //;
 
@@ -31,6 +35,11 @@ Console.WriteLine("Hello, World!");
 //BannerlordToLjspeechFormat(@"S:\Games\Mount & Blade II Bannerlord _ beta 1.1.0\Modules\SandBox\ModuleData\Languages\VoicedLines\EN\PC");
 
 LoadOnnx(@"S:\Work\mimic3\en_US vctk_low\");
+
+void RunVoskDemo(string model_name)
+{
+    VoskDemo.Main(model_name);
+}
 
 void LoadOnnx(string model_dir)
 {
@@ -78,7 +87,7 @@ void LoadOnnx(string model_dir)
 
     long speaker_id;
     {
-        speaker_id = 5;
+        speaker_id = 6;
     }
 
     //const string line = """But this cousin... I would not marry that man! He was a boor, a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.""";
@@ -91,6 +100,8 @@ void LoadOnnx(string model_dir)
         Console.WriteLine(xphone);
     }
     phonemes.Add("r", phonemes["ɹ"]);
+
+    
 
     var phlist = new List<int>();
     phlist.Add(phonemes["^"]);
