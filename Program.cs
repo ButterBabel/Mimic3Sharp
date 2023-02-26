@@ -3,17 +3,9 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using Microsoft.PhoneticMatching;
-using Mimic3Sharp;
 using Mimic3Sharp.eSpeak;
 using NAudio.Wave;
 using System.Globalization;
-using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -34,14 +26,14 @@ Console.WriteLine("Hello, World!");
 LoadOnnx(@"S:\Work\mimic3\en_US vctk_low\");
 ;
 
-RunVoskDemo(@"C:\Users\Zebedee\Downloads\vosk-model-small-en-us-0.15");
-;
+//RunVoskDemo(@"C:\Users\Zebedee\Downloads\vosk-model-small-en-us-0.15");
+//;
 
 
-void RunVoskDemo(string model_name)
-{
-    VoskDemo.Main(model_name);
-}
+//void RunVoskDemo(string model_name)
+//{
+//    VoskDemo.Main(model_name);
+//}
 
 void LoadOnnx(string model_dir)
 {
@@ -79,8 +71,10 @@ void LoadOnnx(string model_dir)
         noise_w = inference["noise_w"].GetValue<double>();
     }
 
-    //eSpeakVoice.Initialize(@"C:\Program Files\eSpeak NG\libespeak-ng.dll");
-    //eSpeakVoice.Speak("I think it's very nice out today.");
+    eSpeakVoice.Initialize(@"C:\Program Files\eSpeak NG\libespeak-ng.dll");
+    eSpeakVoice.SetVoiceByName("en-us");
+    var result = eSpeakVoice.TextToPhonemes("I think it's very nice out today.");
+    Console.WriteLine(result);
 
     //float max_wav_value;
     //{
@@ -129,12 +123,12 @@ void LoadOnnx(string model_dir)
     //const string line = "Despite the fact I hate maths, I quite like learning about fractions.";
     const string line = "Roger roger, raise the ragged, rhotic career of a better butter bandit.";
 
-    var pronounciation = Microsoft.PhoneticMatching.EnPronouncer.Instance.Pronounce(line);
-    foreach (var phone in pronounciation.Phones)
-    {
-        var xphone = new XPhone(phone.Type, phone.Phonation, phone.Place, phone.Manner, phone.Height, phone.Backness, phone.Roundedness, phone.IsRhotic, phone.IsSyllabic);
-        Console.WriteLine(xphone);
-    }
+    //var pronounciation = Microsoft.PhoneticMatching.EnPronouncer.Instance.Pronounce(line);
+    //foreach (var phone in pronounciation.Phones)
+    //{
+    //    var xphone = new XPhone(phone.Type, phone.Phonation, phone.Place, phone.Manner, phone.Height, phone.Backness, phone.Roundedness, phone.IsRhotic, phone.IsSyllabic);
+    //    Console.WriteLine(xphone);
+    //}
 
     phonemes.Add("r", phonemes["ɹ"]);
     phonemes.Add("ɝ", phonemes["ɹ"]);
@@ -142,7 +136,7 @@ void LoadOnnx(string model_dir)
     var phlist = new List<int>();
     phlist.Add(phonemes["^"]);
     phlist.Add(phonemes["#"]);
-    string sh = pronounciation.Ipa.ToLowerInvariant();
+    string sh = "";// pronounciation.Ipa;
     while (sh.Length > 0)
     {
         if (sh[0] == '\u032F')
@@ -156,7 +150,7 @@ void LoadOnnx(string model_dir)
             continue;
         }
 
-        var match = phonemes.OrderByDescending(ph => ph.Key.Length).Where(ph => sh.StartsWith(ph.Key, StringComparison.Ordinal)).FirstOrDefault();
+        var match = phonemes.OrderByDescending(ph => ph.Key.Length).Where(ph => sh.StartsWith(ph.Key, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
         if (match is { Key: null })
         {
             break;
@@ -168,7 +162,7 @@ void LoadOnnx(string model_dir)
     }
     phlist.Add(phonemes["#"]);
     phlist.Add(phonemes["$"]);
-    var text_phoneme_ids = pronounciation.Ipa.Split('\u032F');// EnumerateRunes().Select(rune => phonemes[rune.ToString()]).Cast<long>().ToArray();
+    //var text_phoneme_ids = pronounciation.Ipa.Split('\u032F');// EnumerateRunes().Select(rune => phonemes[rune.ToString()]).Cast<long>().ToArray();
     var x = phlist.Select(i => (long)i).ToArray();
     //var x = phonemes.Values.ToArray();
     ;
@@ -397,6 +391,3 @@ CsvReader GetLjspeechReader(string path)
     var csv = new CsvReader(ofs, config);
     return csv;
 }
-
-public record XPhone(PhoneType Type, Phonation Phonation, PlaceOfArticulation? Place, MannerOfArticulation? Manner, VowelHeight? Height, VowelBackness? Backness, VowelRoundedness? Roundedness, bool? IsRhotic, bool IsSyllabic);
-

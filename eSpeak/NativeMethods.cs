@@ -1,10 +1,10 @@
 ﻿using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Mimic3Sharp.eSpeak;
 
-internal static partial class NativeMethods
-{
+internal static partial class NativeMethods {
     private const string LibraryName = "libespeak-ng";
 
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
@@ -27,12 +27,33 @@ internal static partial class NativeMethods
 
     [LibraryImport(LibraryName)]
     public static partial void espeak_SetSynthCallback(SynthCallback callback);
+
+    /// <summary>
+    /// Translates text into phonemes.  Call espeak_SetVoiceByName() first, to select a language.
+    /// <para>
+    /// It returns a pointer to a character string which contains the phonemes for the text up to
+    /// end of a sentence, or comma, semicolon, colon, or similar punctuation.
+    /// </para>
+    /// </summary>
+    /// <param name="text">The address of a pointer to the input text which is terminated by a zero character.
+    /// On return, the pointer has been advanced past the text which has been translated, or else set
+    /// to NULL to indicate that the end of the text has been reached.
+    /// </param>
+    /// <param name="textmode">Type of character codes</param>
+    /// <param name="phonememode">
+    /// <para>bit 1:   0=eSpeak's ascii phoneme names, 1= International Phonetic Alphabet (as UTF-8 characters).</para>
+    /// <para>bit 7:   use (bits 8-23) as a tie within multi-letter phonemes names</para>
+    /// <para>bits 8-23:  separator character, between phoneme names</para>
+    /// </param>
+    [LibraryImport(LibraryName)]
+    [return: MarshalAs(UnmanagedType.LPUTF8Str)]
+    //using string* for text doesn't apply marshalling and so only works with WCHAR textmode
+    public static unsafe partial string espeak_TextToPhonemes(byte** text, CharEncodingType textmode, int phonememode);
 }
 
 public delegate int SynthCallback(IntPtr wavePtr, int bufferLength, IntPtr eventsPtr);
 
-enum Parameter
-{
+enum Parameter {
     Rate = 1,
     Volume = 2,
     Pitch = 3,
@@ -43,36 +64,55 @@ enum Parameter
     Intonation = 9,
 }
 
-enum Error
-{
+enum Error {
     EE_OK = 0,
     EE_INTERNAL_ERROR = -1,
     EE_BUFFER_FULL = 1,
     EE_NOT_FOUND = 2
 }
 
-enum ParameterType
-{
+enum ParameterType {
     Absolute = 0,
     Relative = 1
 }
 
-enum AudioOutput
-{
+enum AudioOutput {
     Playback,
     Retrieval,
     Synchronous,
     SynchronousPlayback
 };
-enum PositionType
-{
+enum PositionType {
     Character = 1,
     Word = 2,
     Sentence = 3
 }
+
 [Flags]
-enum SpeechFlags
-{
+enum SpeechFlags {
     CharsUtf8 = 1,
     SSML = 0x10,
+}
+
+enum CharEncodingType {
+    /// <summary>
+    /// 8 bit or UTF8  (this is the default)
+    /// </summary>
+    espeakCHARS_AUTO = 0,
+    /// <summary>
+    /// UTF8 encoding
+    /// </summary>
+    espeakCHARS_UTF8 = 1,
+    /// <summary>
+    /// The 8 bit ISO-8859 character set for the particular language.
+    /// </summary>
+    espeakCHARS_8BIT = 2,
+    /// <summary>
+    /// Wide characters (wchar_t)
+    /// </summary>
+    espeakCHARS_WCHAR = 3,
+    /// <summary>
+    /// 16 bit characters.
+    /// </summary>
+    espeakCHARS_16BIT = 4
 }
