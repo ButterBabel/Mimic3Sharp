@@ -35,12 +35,10 @@ LoadOnnx(@"S:\Work\mimic3\en_US vctk_low\");
 //    VoskDemo.Main(model_name);
 //}
 
-void LoadOnnx(string model_dir)
-{
+void LoadOnnx(string model_dir) {
     Dictionary<string, int> phonemes = File.ReadLines(Path.Join(model_dir, "phonemes.txt"))
         .Select(line => line.Split(' '))
-        .Select(arr => new
-        {
+        .Select(arr => new {
             id = int.Parse(arr[0]),
             //maluuba doesn't use 'COMBINING DOUBLE INVERTED BREVE' (U+0361)
             phoneme = arr[1].Replace("\u0361", null)
@@ -49,8 +47,7 @@ void LoadOnnx(string model_dir)
 
     using var speakerReader = GetLjspeechReader(Path.Join(model_dir, "speaker_map.csv"));
     Dictionary<int, string> speakers = speakerReader
-        .GetRecords(new
-        {
+        .GetRecords(new {
             id = 0,
             model = "",
             speaker = ""
@@ -71,10 +68,16 @@ void LoadOnnx(string model_dir)
         noise_w = inference["noise_w"].GetValue<double>();
     }
 
+    //const string prompt = """But this cousin... I would not marry that man! He was a boor, a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.""";
+    //const string prompt = "I think it's very nice out today.";
+    //const string prompt = "Despite the fact I hate maths, I quite like learning about fractions.";
+    const string prompt = "Roger roger, raise the ragged, rhotic career of a better butter bandit.";
+    Console.WriteLine("Prompt: {0}", prompt);
+
     eSpeakVoice.Initialize(@"C:\Program Files\eSpeak NG\libespeak-ng.dll");
     eSpeakVoice.SetVoiceByName("en-us");
-    var result = eSpeakVoice.TextToPhonemes("I think it's very nice out today.");
-    Console.WriteLine(result);
+    var result = eSpeakVoice.TextToPhonemes(prompt);
+    Console.WriteLine("Phonemized: {0}", result);
 
     //float max_wav_value;
     //{
@@ -118,11 +121,6 @@ void LoadOnnx(string model_dir)
     //    }
     //}
 
-    //const string line = """But this cousin... I would not marry that man! He was a boor, a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.""";
-    //const string line = "I think it's very nice out today.";
-    //const string line = "Despite the fact I hate maths, I quite like learning about fractions.";
-    const string line = "Roger roger, raise the ragged, rhotic career of a better butter bandit.";
-
     //var pronounciation = Microsoft.PhoneticMatching.EnPronouncer.Instance.Pronounce(line);
     //foreach (var phone in pronounciation.Phones)
     //{
@@ -130,18 +128,17 @@ void LoadOnnx(string model_dir)
     //    Console.WriteLine(xphone);
     //}
 
-    phonemes.Add("r", phonemes["ɹ"]);
-    phonemes.Add("ɝ", phonemes["ɹ"]);
+    //phonemes.Add("r", phonemes["ɹ"]);
+    //phonemes.Add("ɝ", phonemes["ɹ"]);
 
     var phlist = new List<int>();
     phlist.Add(phonemes["^"]);
     phlist.Add(phonemes["#"]);
-    string sh = "";// pronounciation.Ipa;
-    while (sh.Length > 0)
-    {
-        if (sh[0] == '\u032F')
-        {
-            phlist.Add(phonemes["#"]);
+    string sh = result;
+    while (sh.Length > 0) {
+        //if (sh[0] == '\u032F')
+        if (sh[0] == '\u02D0'/*ː (IPA) long (e.g. long vowel, geminate consonant)*/) {
+            //phlist.Add(phonemes["#"]);
             //phlist.Add(phonemes["·"]);
             //phlist.Add(phonemes["·"]);
             //phlist.Add(phonemes["·"]);
@@ -150,9 +147,14 @@ void LoadOnnx(string model_dir)
             continue;
         }
 
+        if (sh[0] == ' ') {
+            phlist.Add(phonemes["#"]);
+            sh = sh[1..];
+            continue;
+        }
+
         var match = phonemes.OrderByDescending(ph => ph.Key.Length).Where(ph => sh.StartsWith(ph.Key, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-        if (match is { Key: null })
-        {
+        if (match is { Key: null }) {
             break;
         }
 
@@ -228,8 +230,7 @@ void LoadOnnx(string model_dir)
     //return inferenceResult;
 }
 
-void BannerlordToLjspeechFormat(string dir)
-{
+void BannerlordToLjspeechFormat(string dir) {
     const string voice_strings = @"C:\Games\Steam\steamapps\common\Mount & Blade II Bannerlord\Modules\SandBox\ModuleData\voice_strings.xml";
     using var fs = File.OpenRead(voice_strings);
     var doc = XDocument.Load(fs);
@@ -240,8 +241,7 @@ void BannerlordToLjspeechFormat(string dir)
         .Select(attr => attr.Value)
         .Select(text => LocalizedTextRegex.Match(text))
         .Where(m => m.Success)
-        .Select(m => new
-        {
+        .Select(m => new {
             id = m.Groups[1].Value,
             text = m.Groups[2].Value
         })
@@ -249,14 +249,12 @@ void BannerlordToLjspeechFormat(string dir)
 
     var voiceLines = Directory.EnumerateFiles(dir, "*.ogg");
     var linesWithText = voiceLines
-        .Select(path => new
-        {
+        .Select(path => new {
             path,
             id = Path.GetFileNameWithoutExtension(path).Split('_').Last()
         })
         .Where(a => lookup.Contains(a.id))
-        .Select(a => new
-        {
+        .Select(a => new {
             a.path,
             text = lookup[a.id].First()
         });
@@ -277,11 +275,9 @@ void BannerlordToLjspeechFormat(string dir)
     //    transcription = a.text,
     //    normalized = a.text
     //}));
-    csv.WriteRecords(linesWithText.Select(a => new
-    {
+    csv.WriteRecords(linesWithText.Select(a => new {
         id = Path.GetFileNameWithoutExtension(a.path),
-        speaker = VoicePathRegex.Match(Path.GetFileName(a.path)) switch
-        {
+        speaker = VoicePathRegex.Match(Path.GetFileName(a.path)) switch {
             Match m when m is { Success: false } => throw new InvalidOperationException("Speaker identification: not identified from filename"),
             Match m when m.Groups is [_, var accentGroup, var genderGroup, var personaGroup, _] g => string.Join('_', accentGroup.Value, genderGroup.Value, personaGroup.Value),
             _ => throw new InvalidOperationException("Speaker identification: Expected groups not matched")
@@ -290,29 +286,24 @@ void BannerlordToLjspeechFormat(string dir)
     }));
 }
 
-void VctkToLjspeechFormat(string dir)
-{
+void VctkToLjspeechFormat(string dir) {
     var txtFiles = Directory.EnumerateFiles(dir, "*.txt")
-        .Select(path => new
-        {
+        .Select(path => new {
             path,
             filename = Path.GetFileNameWithoutExtension(path),
         })
-        .Select(a => new
-        {
+        .Select(a => new {
             a.path,
             a.filename,
             speaker = a.filename[..a.filename.IndexOf('_')]
         });
 
     var wavFiles = Directory.EnumerateFiles(dir, "*.wav")
-        .Select(path => new
-        {
+        .Select(path => new {
             path,
             filename = Path.GetFileNameWithoutExtension(path),
         })
-        .Select(a => new
-        {
+        .Select(a => new {
             a.path,
             a.filename,
             speaker = a.filename[..a.filename.IndexOf('_')],
@@ -321,23 +312,20 @@ void VctkToLjspeechFormat(string dir)
 
     var all = txtFiles
         .GroupJoin(wavFiles, txt => txt.filename, wav => wav.entry,
-            (txt, wavs) => new
-            {
+            (txt, wavs) => new {
                 txt,
                 wavs
             });
 
     using var csv = GetLjspeechWriter(Path.Join(dir, "metadata.csv"));
-    csv.WriteRecords(all.SelectMany(a => a.wavs, (a, wav) => new
-    {
+    csv.WriteRecords(all.SelectMany(a => a.wavs, (a, wav) => new {
         id = wav.filename,
         wav.speaker,
         text = File.ReadAllText(a.txt.path).Trim()
     }));
 }
 
-void LarynxTrainDatasetToSubfolders(string dir)
-{
+void LarynxTrainDatasetToSubfolders(string dir) {
     var datasetPath = Path.Join(dir, "dataset.jsonl");
     var datasetBakPath = Path.Join(dir, "dataset.jsonl.bak");
     File.Move(datasetPath, datasetBakPath);
@@ -347,8 +335,7 @@ void LarynxTrainDatasetToSubfolders(string dir)
     using var writer = File.CreateText(datasetPath);
 
     var cacheFolder = Path.Join(dir, "cache", "22050");
-    foreach (var line in datasetLines)
-    {
+    foreach (var line in datasetLines) {
         var speaker = line["speaker"].GetValue<string>();
         var normPath = line["audio_norm_path"].GetValue<string>();
         var specPath = line["audio_spec_path"].GetValue<string>();
@@ -368,24 +355,21 @@ void LarynxTrainDatasetToSubfolders(string dir)
     string FixupPath(string path) => Path.Join(dir, Path.GetRelativePath("../../training_vctk_with_bannerlord", path));
 }
 
-CsvConfiguration GetLjspeechCsvConfiguration()
-{
+CsvConfiguration GetLjspeechCsvConfiguration() {
     var config = new CsvConfiguration(CultureInfo.InvariantCulture);
     config.Delimiter = "|";
     config.HasHeaderRecord = false;
     return config;
 }
 
-CsvWriter GetLjspeechWriter(string path)
-{
+CsvWriter GetLjspeechWriter(string path) {
     var config = GetLjspeechCsvConfiguration();
     var ofs = new StreamWriter(path);
     var csv = new CsvWriter(ofs, config);
     return csv;
 }
 
-CsvReader GetLjspeechReader(string path)
-{
+CsvReader GetLjspeechReader(string path) {
     var config = GetLjspeechCsvConfiguration();
     var ofs = new StreamReader(path);
     var csv = new CsvReader(ofs, config);

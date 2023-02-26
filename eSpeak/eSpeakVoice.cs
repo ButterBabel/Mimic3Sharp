@@ -29,7 +29,7 @@ internal static class eSpeakVoice {
     }
 
     public static unsafe string TextToPhonemes(string text) {
-        return espeak_TextToPhonemes(text, CharEncodingType.espeakCHARS_UTF8, 0);
+        return espeak_TextToPhonemes(text, CharEncodingType.espeakCHARS_UTF8, 2);
     }
 
     static bool CheckResult(Error result) {
