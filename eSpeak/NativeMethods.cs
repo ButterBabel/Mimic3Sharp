@@ -45,10 +45,8 @@ internal static partial class NativeMethods {
     /// <para>bit 7:   use (bits 8-23) as a tie within multi-letter phonemes names</para>
     /// <para>bits 8-23:  separator character, between phoneme names</para>
     /// </param>
-    [LibraryImport(LibraryName)]
-    [return: MarshalAs(UnmanagedType.LPUTF8Str)]
-    //using string* for text doesn't apply marshalling and so only works with WCHAR textmode
-    public static unsafe partial string espeak_TextToPhonemes(byte** text, CharEncodingType textmode, int phonememode);
+    [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+    public static unsafe partial string espeak_TextToPhonemes(in string text, CharEncodingType textmode, int phonememode);
 }
 
 public delegate int SynthCallback(IntPtr wavePtr, int bufferLength, IntPtr eventsPtr);
