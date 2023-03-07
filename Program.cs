@@ -43,7 +43,7 @@ void LoadOnnx(string model_dir) {
         .Select(arr => new {
             id = int.Parse(arr[0]),
             //maluuba doesn't use 'COMBINING DOUBLE INVERTED BREVE' (U+0361)
-            phoneme = arr[1]//.Replace("\u0361", null)
+            phoneme = arr[1].Replace("\u0361", null)
         })
         .ToDictionary(a => a.phoneme, a => a.id);
 
@@ -132,8 +132,11 @@ void LoadOnnx(string model_dir) {
     //    Console.WriteLine(xphone);
     //}
 
-    //phonemes.Add("r", phonemes["ɹ"]);
-    //phonemes.Add("ɝ", phonemes["ɹ"]);
+    phonemes.Add("ᵻ", phonemes["ɪ"]);
+    phonemes.Add("ɾ", phonemes["t"]);
+    //phonemes.Add("ʌ", phonemes["ə"]);
+    phonemes.Add("ɐ", phonemes["ə"]);
+    //phonemes.Add("ɪ", phonemes["ə"]);
 
     var phlist = new List<int>();
     phlist.Add(phonemes["^"]);
@@ -148,22 +151,9 @@ void LoadOnnx(string model_dir) {
             //phlist.Add(phonemes["·"]);
             //phlist.Add(phonemes["·"]);
             sh = sh[1..];
-            phlist.Add(phonemes["ɚ"]);
-            phlist.Add(phonemes["_"]);
+            //phlist.Add(phonemes["ɚ"]);
+            //phlist.Add(phonemes["_"]);
             continue;
-        }
-
-        if (sh[0] == '\u1D7B'/*An unofficial extension to the International Phonetic Alphabet for the transcription of a near-close central unrounded vowel, for which the standard transcription would be [ɪ̈] or [ɨ̞].*/) {
-            sh = sh[1..];
-            phlist.Add(phonemes["eɪ"]);
-            phlist.Add(phonemes["_"]);
-            continue;
-        }
-
-        if (sh[0] == '\u027E'/*ɾ Latin Small Letter R with Fishhook*/) {
-            sh = sh[1..];
-            phlist.Add(phonemes["t"]);
-            phlist.Add(phonemes["_"]);
         }
 
         if (sh[0] == ' ') {
