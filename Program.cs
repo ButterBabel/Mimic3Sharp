@@ -6,6 +6,7 @@ using Microsoft.ML.OnnxRuntime.Tensors;
 using Mimic3Sharp.eSpeak;
 using NAudio.Wave;
 using System.Globalization;
+using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -13,6 +14,7 @@ using Tensorflow;
 using Tensorflow.NumPy;
 using static Mimic3Sharp.Regexes;
 
+Console.OutputEncoding = Encoding.UTF8;
 Console.WriteLine("Hello, World!");
 
 //LarynxTrainDatasetToSubfolders(@"S:\Work\larynx2_train\training_vctk_with_bannerlord");
@@ -41,7 +43,7 @@ void LoadOnnx(string model_dir) {
         .Select(arr => new {
             id = int.Parse(arr[0]),
             //maluuba doesn't use 'COMBINING DOUBLE INVERTED BREVE' (U+0361)
-            phoneme = arr[1].Replace("\u0361", null)
+            phoneme = arr[1]//.Replace("\u0361", null)
         })
         .ToDictionary(a => a.phoneme, a => a.id);
 
@@ -71,7 +73,9 @@ void LoadOnnx(string model_dir) {
     //const string prompt = """But this cousin... I would not marry that man! He was a boor, a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.""";
     //const string prompt = "I think it's very nice out today.";
     //const string prompt = "Despite the fact I hate maths, I quite like learning about fractions.";
-    const string prompt = "Roger roger, raise the ragged, rhotic career of a better butter bandit.";
+    //const string prompt = "Despite the fact I hate maths I quite like learning about fractions";
+    //const string prompt = "Roger roger, raise the ragged, rhotic career of a better butter bandit.";
+    const string prompt = "Roger roger raise the ragged rhotic career of a better butter bandit.";
     Console.WriteLine("Prompt: {0}", prompt);
 
     eSpeakVoice.Initialize(@"C:\Program Files\eSpeak NG\libespeak-ng.dll");
@@ -134,7 +138,7 @@ void LoadOnnx(string model_dir) {
     var phlist = new List<int>();
     phlist.Add(phonemes["^"]);
     phlist.Add(phonemes["#"]);
-    string sh = result;
+    string sh = result;//.Normalize(NormalizationForm.FormD);
     while (sh.Length > 0) {
         //if (sh[0] == '\u032F')
         if (sh[0] == '\u02D0'/*ː (IPA) long (e.g. long vowel, geminate consonant)*/) {
@@ -144,7 +148,22 @@ void LoadOnnx(string model_dir) {
             //phlist.Add(phonemes["·"]);
             //phlist.Add(phonemes["·"]);
             sh = sh[1..];
+            phlist.Add(phonemes["ɚ"]);
+            phlist.Add(phonemes["_"]);
             continue;
+        }
+
+        if (sh[0] == '\u1D7B'/*An unofficial extension to the International Phonetic Alphabet for the transcription of a near-close central unrounded vowel, for which the standard transcription would be [ɪ̈] or [ɨ̞].*/) {
+            sh = sh[1..];
+            phlist.Add(phonemes["eɪ"]);
+            phlist.Add(phonemes["_"]);
+            continue;
+        }
+
+        if (sh[0] == '\u027E'/*ɾ Latin Small Letter R with Fishhook*/) {
+            sh = sh[1..];
+            phlist.Add(phonemes["t"]);
+            phlist.Add(phonemes["_"]);
         }
 
         if (sh[0] == ' ') {
