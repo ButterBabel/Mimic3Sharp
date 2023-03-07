@@ -70,13 +70,13 @@ void LoadOnnx(string model_dir) {
         noise_w = inference["noise_w"].GetValue<double>();
     }
 
-    const string prompt = """But this cousin... I would not marry that man! He was a boor, a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.""";
-    //const string prompt = "But this cousin I would not marry that man He was a boor a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.";
+    //const string prompt = """But this cousin... I would not marry that man! He was a boor, a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.""";
     //const string prompt = "I think it's very nice out today.";
     //const string prompt = "Despite the fact I hate maths, I quite like learning about fractions.";
-    //const string prompt = "Despite the fact I hate maths I quite like learning about fractions";
     //const string prompt = "Roger roger, raise the ragged, rhotic career of a better butter bandit.";
-    //const string prompt = "Roger roger raise the ragged rhotic career of a better butter bandit.";
+    //const string prompt = "My parents were merchants, and I inherited a share of their workshops and camels. But banditry and the fortunes of trade ruined me, which is also common, and now I must make my money some other way.";
+    const string prompt = "Blessed be the Gods, happened that my cousin Aed was in the guard. He sprung me that night from the prison, and together we went roaming round the country. But a passing magistrate decided he weren't parting with his purse, and pulled his blade rather than handing it over like a sensible lad. I took him down, but now before my poor Aed was butchered. See now the price of woman's ingratitude?";
+    //const string prompt = "Because I loved my mother, and because I was faster and stronger than the boys, I did all that she said I would do. Of those born in my year, I was the first to kill an enemy. My mother boasted even more, so that the other women came to hate her. They turned us all out of our encampment. We were forced to sell our lands and our slaves, as we could not take them with us, and we were given but a fraction of the price. All we had was our sheep. Of course raiders found us soon enough, and killed my mother, and took our flock. I escaped.";
     Console.WriteLine("Prompt: {0}", prompt);
 
     eSpeakVoice.Initialize(@"C:\Program Files\eSpeak NG\libespeak-ng.dll");
@@ -100,7 +100,8 @@ void LoadOnnx(string model_dir) {
 
     long speaker_id;
     {
-        speaker_id = 11;
+        speaker_id = Random.Shared.Next(speakers.Keys.Max());
+        Console.WriteLine("Using speaker id {0}: {1}", speaker_id, speakers[(int)speaker_id]);
     }
 
     //checking espeak -> maluuba
