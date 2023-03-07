@@ -45,8 +45,74 @@ internal static partial class NativeMethods {
     /// <para>bit 7:   use (bits 8-23) as a tie within multi-letter phonemes names</para>
     /// <para>bits 8-23:  separator character, between phoneme names</para>
     /// </param>
-    [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
-    public static unsafe partial string espeak_TextToPhonemes(in string text, CharEncodingType textmode, int phonememode);
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Interop.LibraryImportGenerator", "7.0.8.6910")]
+    [System.Runtime.CompilerServices.SkipLocalsInitAttribute]
+    public static unsafe List<string> espeak_TextToPhonemes(string t, global::Mimic3Sharp.eSpeak.CharEncodingType textmode, int phonememode) {
+        byte* __text_native_orig = default;
+        byte* __text_native = default;
+        string __retVal;
+        byte* __retVal_native = default;
+
+        string text = t;
+
+        var groups = new List<string>();
+
+        try {
+            // Marshal - Convert managed data to native data.
+            __text_native = __text_native_orig = global::System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.ConvertToUnmanaged(text);
+            do {
+                __retVal_native = __PInvoke(&__text_native, textmode, phonememode);
+
+                // Unmarshal - Convert native data to managed data.
+                __retVal = global::System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.ConvertToManaged(__retVal_native);
+                //text = global::System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.ConvertToManaged(__text_native);
+                groups.Add(__retVal);
+            } while (__text_native != null);
+        }
+        finally {
+            // Cleanup - Perform required cleanup.
+            global::System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.Free(__retVal_native);
+            global::System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.Free(__text_native_orig);
+        }
+
+        return groups;
+        // Local P/Invoke
+        [System.Runtime.InteropServices.DllImportAttribute("libespeak-ng", EntryPoint = "espeak_TextToPhonemes", ExactSpelling = true)]
+        static extern unsafe byte* __PInvoke(byte** text, global::Mimic3Sharp.eSpeak.CharEncodingType textmode, int phonememode);
+    }
+    //[LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+    //public static unsafe partial string espeak_TextToPhonemes(ref string text, CharEncodingType textmode, int phonememode);
+
+    //public static unsafe string espeak_TextToPhonemes(in string text, global::Mimic3Sharp.eSpeak.CharEncodingType textmode, int phonememode) {
+    //    byte* __text_native = default;
+    //    string __retVal;
+    //    byte* __retVal_native = default;
+    //    // Setup - Perform required setup.
+    //    global::System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.ManagedToUnmanagedIn __text_native__marshaller = new();
+    //    try {
+    //        // Marshal - Convert managed data to native data.
+    //        byte* __text_native__stackptr = stackalloc byte[global::System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.ManagedToUnmanagedIn.BufferSize];
+    //        __text_native__marshaller.FromManaged(text, new System.Span<byte>(__text_native__stackptr, global::System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.ManagedToUnmanagedIn.BufferSize));
+    //        {
+    //            // PinnedMarshal - Convert managed data to native data that requires the managed data to be pinned.
+    //            __text_native = __text_native__marshaller.ToUnmanaged();
+    //            __retVal_native = __PInvoke(&__text_native, textmode, phonememode);
+    //        }
+
+    //        // Unmarshal - Convert native data to managed data.
+    //        __retVal = global::System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.ConvertToManaged(__retVal_native);
+    //    }
+    //    finally {
+    //        // Cleanup - Perform required cleanup.
+    //        global::System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.Free(__retVal_native);
+    //        __text_native__marshaller.Free();
+    //    }
+
+    //    return __retVal;
+    //    // Local P/Invoke
+    //    [System.Runtime.InteropServices.DllImportAttribute(LibraryName, EntryPoint = "espeak_TextToPhonemes", ExactSpelling = true)]
+    //    static extern unsafe byte* __PInvoke(byte** text, global::Mimic3Sharp.eSpeak.CharEncodingType textmode, int phonememode);
+    //}
 }
 
 public delegate int SynthCallback(IntPtr wavePtr, int bufferLength, IntPtr eventsPtr);

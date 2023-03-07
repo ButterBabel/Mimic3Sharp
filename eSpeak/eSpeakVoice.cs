@@ -28,7 +28,7 @@ internal static class eSpeakVoice {
         }
     }
 
-    public static unsafe string TextToPhonemes(string text) {
+    public static unsafe List<string> TextToPhonemes(string text) {
         return espeak_TextToPhonemes(text, CharEncodingType.espeakCHARS_UTF8, 2);
     }
 

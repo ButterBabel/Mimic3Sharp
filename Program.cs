@@ -70,18 +70,27 @@ void LoadOnnx(string model_dir) {
         noise_w = inference["noise_w"].GetValue<double>();
     }
 
-    //const string prompt = """But this cousin... I would not marry that man! He was a boor, a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.""";
+    const string prompt = """But this cousin... I would not marry that man! He was a boor, a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.""";
+    //const string prompt = "But this cousin I would not marry that man He was a boor a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.";
     //const string prompt = "I think it's very nice out today.";
     //const string prompt = "Despite the fact I hate maths, I quite like learning about fractions.";
     //const string prompt = "Despite the fact I hate maths I quite like learning about fractions";
     //const string prompt = "Roger roger, raise the ragged, rhotic career of a better butter bandit.";
-    const string prompt = "Roger roger raise the ragged rhotic career of a better butter bandit.";
+    //const string prompt = "Roger roger raise the ragged rhotic career of a better butter bandit.";
     Console.WriteLine("Prompt: {0}", prompt);
 
     eSpeakVoice.Initialize(@"C:\Program Files\eSpeak NG\libespeak-ng.dll");
     eSpeakVoice.SetVoiceByName("en-us");
-    var result = eSpeakVoice.TextToPhonemes(prompt);
-    Console.WriteLine("Phonemized: {0}", result);
+    string prompt_fixup = prompt;
+    {
+        prompt_fixup = prompt_fixup.Replace(" - ", "... ");
+    }
+    var result = eSpeakVoice.TextToPhonemes(prompt_fixup);
+
+    Console.WriteLine("Phonemized: ");
+    foreach (var r in result) {
+        Console.WriteLine("\t{0}", r);
+    }
 
     //float max_wav_value;
     //{
@@ -132,37 +141,37 @@ void LoadOnnx(string model_dir) {
     //    Console.WriteLine(xphone);
     //}
 
+    phonemes.Add(" ", phonemes["#"]);
+    //phonemes.Add("ː", phonemes["·"]); //too long
+    phonemes.Add("ː", phonemes["_"]);
+    //phonemes.Add("ː", phonemes["ˌ"]);
     phonemes.Add("ᵻ", phonemes["ɪ"]);
     phonemes.Add("ɾ", phonemes["t"]);
     //phonemes.Add("ʌ", phonemes["ə"]);
     phonemes.Add("ɐ", phonemes["ə"]);
     //phonemes.Add("ɪ", phonemes["ə"]);
+    phonemes.Add("ɜː", phonemes["ɚ"]);
+    phonemes.Add("oː", phonemes["ʊ"]); //also ɔ
 
     var phlist = new List<int>();
-    phlist.Add(phonemes["^"]);
-    phlist.Add(phonemes["#"]);
-    string sh = result;//.Normalize(NormalizationForm.FormD);
+    //phlist.Add(phonemes["^"]);
+    //phlist.Add(phonemes["#"]);
+    string sh = string.Join(null, result.Select(r => $"^#{r}#$"));//string.Join('·', result);//.Normalize(NormalizationForm.FormD);
     while (sh.Length > 0) {
-        //if (sh[0] == '\u032F')
-        if (sh[0] == '\u02D0'/*ː (IPA) long (e.g. long vowel, geminate consonant)*/) {
-            //phlist.Add(phonemes["#"]);
-            //phlist.Add(phonemes["·"]);
-            //phlist.Add(phonemes["·"]);
-            //phlist.Add(phonemes["·"]);
-            //phlist.Add(phonemes["·"]);
-            sh = sh[1..];
-            //phlist.Add(phonemes["ɚ"]);
-            //phlist.Add(phonemes["_"]);
-            continue;
+        //phoneme_map
+        switch (sh[0]) {
+            case '|':
+                sh = sh[1..];
+                phlist.Add(phonemes["·"]);
+                continue;
+            case '‖':
+                sh = sh[1..];
+                phlist.Add(phonemes["·"]);
+                phlist.Add(phonemes["·"]);
+                continue;
         }
 
-        if (sh[0] == ' ') {
-            phlist.Add(phonemes["#"]);
-            sh = sh[1..];
-            continue;
-        }
-
-        var match = phonemes.OrderByDescending(ph => ph.Key.Length).Where(ph => sh.StartsWith(ph.Key, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+        var match = phonemes.OrderByDescending(ph => ph.Key.Length).Where(ph => sh.StartsWith(ph.Key, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         if (match is { Key: null }) {
             break;
         }
@@ -171,10 +180,10 @@ void LoadOnnx(string model_dir) {
         phlist.Add(match.Value);
         phlist.Add(phonemes["_"]);
     }
-    phlist.Add(phonemes["#"]);
-    phlist.Add(phonemes["$"]);
+    //phlist.Add(phonemes["#"]);
+    //phlist.Add(phonemes["$"]);
     //var text_phoneme_ids = pronounciation.Ipa.Split('\u032F');// EnumerateRunes().Select(rune => phonemes[rune.ToString()]).Cast<long>().ToArray();
-    var x = phlist.Select(i => (long)i).ToArray();
+    var x = phlist.Where(i => i >= 0).Select(i => (long)i).ToArray();
     //var x = phonemes.Values.ToArray();
     ;
 
