@@ -1,0 +1,280 @@
+==================================================
+Function Name     : STT_AddHotWord
+Address           : 0x000000018000c960
+Relative Address  : 0x0000c960
+Ordinal           : 13 (0xd)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_ClearHotWords
+Address           : 0x000000018000ca70
+Relative Address  : 0x0000ca70
+Ordinal           : 14 (0xe)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_CreateModel
+Address           : 0x000000018000cab0
+Relative Address  : 0x0000cab0
+Ordinal           : 15 (0xf)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_CreateModelFromBuffer
+Address           : 0x000000018000cac0
+Relative Address  : 0x0000cac0
+Ordinal           : 16 (0x10)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_CreateStream
+Address           : 0x000000018000cad0
+Relative Address  : 0x0000cad0
+Ordinal           : 17 (0x11)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_DisableExternalScorer
+Address           : 0x000000018000ce40
+Relative Address  : 0x0000ce40
+Ordinal           : 18 (0x12)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_EnableExternalScorer
+Address           : 0x000000018000cec0
+Relative Address  : 0x0000cec0
+Ordinal           : 19 (0x13)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_EnableExternalScorerFromBuffer
+Address           : 0x000000018000cf70
+Relative Address  : 0x0000cf70
+Ordinal           : 20 (0x14)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_EraseHotWord
+Address           : 0x000000018000d020
+Relative Address  : 0x0000d020
+Ordinal           : 21 (0x15)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_ErrorCodeToErrorMessage
+Address           : 0x0000000180009dc0
+Relative Address  : 0x00009dc0
+Ordinal           : 22 (0x16)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_FeedAudioContent
+Address           : 0x000000018000d270
+Relative Address  : 0x0000d270
+Ordinal           : 23 (0x17)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_FinishStream
+Address           : 0x000000018000d3c0
+Relative Address  : 0x0000d3c0
+Ordinal           : 24 (0x18)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_FinishStreamWithMetadata
+Address           : 0x000000018000d470
+Relative Address  : 0x0000d470
+Ordinal           : 25 (0x19)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_FreeMetadata
+Address           : 0x000000018000d530
+Relative Address  : 0x0000d530
+Ordinal           : 26 (0x1a)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_FreeModel
+Address           : 0x000000018000d5e0
+Relative Address  : 0x0000d5e0
+Ordinal           : 27 (0x1b)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_FreeStream
+Address           : 0x000000018000d600
+Relative Address  : 0x0000d600
+Ordinal           : 28 (0x1c)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_FreeString
+Address           : 0x000000018000d630
+Relative Address  : 0x0000d630
+Ordinal           : 29 (0x1d)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_GetModelBeamWidth
+Address           : 0x000000018000d640
+Relative Address  : 0x0000d640
+Ordinal           : 30 (0x1e)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_GetModelSampleRate
+Address           : 0x000000018000d650
+Relative Address  : 0x0000d650
+Ordinal           : 31 (0x1f)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_IntermediateDecode
+Address           : 0x000000018000d660
+Relative Address  : 0x0000d660
+Ordinal           : 32 (0x20)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_IntermediateDecodeFlushBuffers
+Address           : 0x000000018000d680
+Relative Address  : 0x0000d680
+Ordinal           : 33 (0x21)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_IntermediateDecodeWithMetadata
+Address           : 0x000000018000d6f0
+Relative Address  : 0x0000d6f0
+Ordinal           : 34 (0x22)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_IntermediateDecodeWithMetadataFlushBuffers
+Address           : 0x000000018000d710
+Relative Address  : 0x0000d710
+Ordinal           : 35 (0x23)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_SetModelBeamWidth
+Address           : 0x000000018000d790
+Relative Address  : 0x0000d790
+Ordinal           : 36 (0x24)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_SetScorerAlphaBeta
+Address           : 0x000000018000d7a0
+Relative Address  : 0x0000d7a0
+Ordinal           : 37 (0x25)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_SpeechToText
+Address           : 0x000000018000d7d0
+Relative Address  : 0x0000d7d0
+Ordinal           : 38 (0x26)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_SpeechToTextWithMetadata
+Address           : 0x000000018000d830
+Relative Address  : 0x0000d830
+Ordinal           : 39 (0x27)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
+==================================================
+Function Name     : STT_Version
+Address           : 0x000000018000d890
+Relative Address  : 0x0000d890
+Ordinal           : 40 (0x28)
+Filename          : libstt.dll
+Full Path         : C:\Users\Zebedee\Downloads\libstt.tflite.Windows\libstt.dll
+Type              : Exported Function
+==================================================
+
