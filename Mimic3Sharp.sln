@@ -5,11 +5,6 @@ VisualStudioVersion = 17.5.33326.253
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mimic3Sharp", "Mimic3Sharp.csproj", "{56B3BE82-486F-446E-8974-4F605AB8B555}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D0A3A54F-FEF8-4FD7-A40C-BD6205CD6351}"
-	ProjectSection(SolutionItems) = preProject
-		Mimic3Voice.cs = Mimic3Voice.cs
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

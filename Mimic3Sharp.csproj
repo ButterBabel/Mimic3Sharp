@@ -9,12 +9,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="assets\**" />
+    <EmbeddedResource Remove="assets\**" />
+    <None Remove="assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<Content Include="assets\libstt.tflite.Windows\libstt.so" Link="libstt.so" CopyToOutputDirectory="PreserveNewest" />
+	<Content Include="assets\libstt.tflite.Windows\libkenlm.so" Link="libkenlm.so" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CsvHelper" Version="30.0.1" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.14.0" />
     <PackageReference Include="NAudio" Version="2.1.0" />
     <PackageReference Include="SciSharp.TensorFlow.Redist" Version="2.11.0" />
     <PackageReference Include="System.Numerics.Tensors" Version="7.0.0-rtm.22518.5" />
     <PackageReference Include="TensorFlow.NET" Version="0.100.2" />
+    <PackageReference Include="Vosk" Version="0.3.38" />
   </ItemGroup>
 
 </Project>

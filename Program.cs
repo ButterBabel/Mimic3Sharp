@@ -4,6 +4,7 @@ using CsvHelper.Configuration;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Mimic3Sharp.eSpeak;
+using Mimic3Sharp.Vosk;
 using NAudio.Wave;
 using System.Globalization;
 using System.Text;
@@ -17,6 +18,8 @@ using static Mimic3Sharp.Regexes;
 Console.OutputEncoding = Encoding.UTF8;
 Console.WriteLine("Hello, World!");
 
+ForceAlignSTT(@"C:\Users\Zebedee\Downloads\model.tflite");
+
 //LarynxTrainDatasetToSubfolders(@"S:\Work\larynx2_train\training_vctk_with_bannerlord");
 //;
 
@@ -28,14 +31,21 @@ Console.WriteLine("Hello, World!");
 LoadOnnx(@"S:\Work\mimic3\en_US vctk_low\");
 ;
 
-//RunVoskDemo(@"C:\Users\Zebedee\Downloads\vosk-model-small-en-us-0.15");
-//;
+RunVoskDemo(@"C:\Users\Zebedee\Downloads\vosk-model-small-en-us-0.15",
+    "The lords and the merchants, they sit in their lofty towers making grand decisions, but they don't see into the back alleys to know what plots are going on. They don't know where to find the debtor who won't pay his debt. They don't know where to find the wagging tongues starting rumors. So that's where I come in.");
+;
 
+void RunVoskDemo(string model_name, string transcript)
+{
+    var stripper = new Regex(@"([\w'-]+)", RegexOptions.Compiled);
+    var grammar = $"[{string.Join(", ", stripper.Matches(transcript).Select(x => $"\"{x}\""))}]".ToLowerInvariant();
+    VoskDemo.Main(model_name, grammar);
+}
 
-//void RunVoskDemo(string model_name)
-//{
-//    VoskDemo.Main(model_name);
-//}
+void ForceAlignSTT(string modelPath) {
+    var stt = new Mimic3Sharp.CoquiSTT.SpeechToText(modelPath);
+    ;
+}
 
 void LoadOnnx(string model_dir) {
     Dictionary<string, int> phonemes = File.ReadLines(Path.Join(model_dir, "phonemes.txt"))
@@ -75,8 +85,9 @@ void LoadOnnx(string model_dir) {
     //const string prompt = "Despite the fact I hate maths, I quite like learning about fractions.";
     //const string prompt = "Roger roger, raise the ragged, rhotic career of a better butter bandit.";
     //const string prompt = "My parents were merchants, and I inherited a share of their workshops and camels. But banditry and the fortunes of trade ruined me, which is also common, and now I must make my money some other way.";
-    const string prompt = "Blessed be the Gods, happened that my cousin Aed was in the guard. He sprung me that night from the prison, and together we went roaming round the country. But a passing magistrate decided he weren't parting with his purse, and pulled his blade rather than handing it over like a sensible lad. I took him down, but now before my poor Aed was butchered. See now the price of woman's ingratitude?";
+    //const string prompt = "Blessed be the Gods, happened that my cousin Aed was in the guard. He sprung me that night from the prison, and together we went roaming round the country. But a passing magistrate decided he weren't parting with his purse, and pulled his blade rather than handing it over like a sensible lad. I took him down, but now before my poor Aed was butchered. See now the price of woman's ingratitude?";
     //const string prompt = "Because I loved my mother, and because I was faster and stronger than the boys, I did all that she said I would do. Of those born in my year, I was the first to kill an enemy. My mother boasted even more, so that the other women came to hate her. They turned us all out of our encampment. We were forced to sell our lands and our slaves, as we could not take them with us, and we were given but a fraction of the price. All we had was our sheep. Of course raiders found us soon enough, and killed my mother, and took our flock. I escaped.";
+    const string prompt = "The lords and the merchants, they sit in their lofty towers making grand decisions, but they don't see into the back alleys to know what plots are going on. They don't know where to find the debtor who won't pay his debt. They don't know where to find the wagging tongues starting rumors. So that's where I come in.";
     Console.WriteLine("Prompt: {0}", prompt);
 
     eSpeakVoice.Initialize(@"C:\Program Files\eSpeak NG\libespeak-ng.dll");
