@@ -18,7 +18,7 @@ using static Mimic3Sharp.Regexes;
 Console.OutputEncoding = Encoding.UTF8;
 Console.WriteLine("Hello, World!");
 
-ForceAlignSTT(@"C:\Users\Zebedee\Downloads\model.tflite");
+//ForceAlignSTT(@"C:\Users\Zebedee\Downloads\model.tflite");
 
 //LarynxTrainDatasetToSubfolders(@"S:\Work\larynx2_train\training_vctk_with_bannerlord");
 //;
@@ -39,13 +39,16 @@ void RunVoskDemo(string model_name, string transcript)
 {
     var stripper = new Regex(@"([\w'-]+)", RegexOptions.Compiled);
     var grammar = $"[{string.Join(", ", stripper.Matches(transcript).Select(x => $"\"{x}\""))}]".ToLowerInvariant();
-    VoskDemo.Main(model_name, grammar);
+    var vmodel = new VoskModel(model_name);
+    
+    var results = vmodel.Recognize(File.OpenRead("test.wav"), 22050, grammar);
+    Console.WriteLine(results.Last());
 }
 
-void ForceAlignSTT(string modelPath) {
-    var stt = new Mimic3Sharp.CoquiSTT.SpeechToText(modelPath);
-    ;
-}
+//void ForceAlignSTT(string modelPath) {
+//    var stt = new Mimic3Sharp.CoquiSTT.SpeechToText(modelPath);
+//    ;
+//}
 
 void LoadOnnx(string model_dir) {
     Dictionary<string, int> phonemes = File.ReadLines(Path.Join(model_dir, "phonemes.txt"))
