@@ -41,8 +41,8 @@ void RunVoskDemo(string model_name, string transcript)
     var grammar = $"[{string.Join(", ", stripper.Matches(transcript).Select(x => $"\"{x}\""))}]".ToLowerInvariant();
     var vmodel = new VoskModel(model_name);
     
-    var results = vmodel.Recognize(File.OpenRead("test.wav"), 22050, grammar);
-    Console.WriteLine(results.Last());
+    var result = vmodel.Recognize(File.OpenRead("test.wav"), 22050, grammar);
+    Console.WriteLine(result?.Text ?? "FATAL: Vosk did not recognize any text");
 }
 
 //void ForceAlignSTT(string modelPath) {
