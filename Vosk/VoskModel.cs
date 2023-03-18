@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Text.Json;
 using Vosk;
 
 namespace Mimic3Sharp.Vosk;
@@ -21,7 +22,7 @@ public sealed class VoskModel
         _model = new Model(modelPath);
     }
 
-    public IEnumerable<string> Recognize(Stream wavStream, int sampleRate, string? grammar = null)
+    public VoskResult? Recognize(Stream wavStream, int sampleRate, string? grammar = null)
     {
         using VoskRecognizer rec = grammar switch
         {
@@ -44,11 +45,7 @@ public sealed class VoskModel
                 {
                     if (rec.AcceptWaveform(buffer, bytesRead))
                     {
-                        yield return rec.Result();
-                    }
-                    else
-                    {
-                        yield return rec.PartialResult();
+                        break;
                     }
                 }
             }
@@ -58,6 +55,7 @@ public sealed class VoskModel
             }
         }
 
-        yield return rec.FinalResult();
+        var result = rec.FinalResult();
+        return JsonSerializer.Deserialize<VoskResult>(result);
     }
 }
