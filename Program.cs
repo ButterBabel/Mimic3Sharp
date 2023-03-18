@@ -195,24 +195,30 @@ void LoadOnnx(string model_dir) {
     //phlist.Add(phonemes["#"]);
     //phlist.Add(phonemes["$"]);
     //var text_phoneme_ids = pronounciation.Ipa.Split('\u032F');// EnumerateRunes().Select(rune => phonemes[rune.ToString()]).Cast<long>().ToArray();
-    var x = phlist.Where(i => i >= 0).Select(i => (long)i).ToArray();
+    var phlist_ids = phlist.Where(i => i >= 0).Select(i => (long)i).ToArray();
     //var x = phonemes.Values.ToArray();
     ;
 
-    var text_array = np.expand_dims(np.array(x, dtype: np.int64), 0);//
-    var text_lengths_array = np.array(new[] { text_array.shape[1] }, dtype: np.int64);//
-    var scales_array = np.array(new[] { noise_scale, length_scale, noise_w, }, dtype: np.float32);//
-    var sid = np.array(new[] { speaker_id }, dtype: np.int64);
+    var text_array = new DenseTensor<long>(new[] { 1, phlist_ids.Length });
+    phlist_ids.CopyTo(text_array.Buffer);
 
-    // create input tensor (nlp example)
-    //var inputTensor = new DenseTensor<string>(new string[] { review }, new int[] { 1, 1 });
+    var text_lengths_array = new DenseTensor<long>(1);
+    text_lengths_array[0] = phlist_ids.Length;
+
+    var scales_array = new DenseTensor<float>(3);// { noise_scale, length_scale, noise_w };
+    scales_array[0] = (float)noise_scale;
+    scales_array[1] = (float)length_scale;
+    scales_array[2] = (float)noise_w;
+
+    var sid = new DenseTensor<long>(1);
+    sid[0] = speaker_id;
 
     // Create input data for session.
     var input = new List<NamedOnnxValue> {
-        NamedOnnxValue.CreateFromTensor<long>("input", text_array.ToMultiDimArray<long>().ToTensor<long>()),
-        NamedOnnxValue.CreateFromTensor<long>("input_lengths", text_lengths_array.ToArray<long>().ToTensor()),
-        NamedOnnxValue.CreateFromTensor<float>("scales", scales_array.ToArray<float>().ToTensor()),
-        NamedOnnxValue.CreateFromTensor<long>("sid", sid.ToArray<long>().ToTensor())
+        NamedOnnxValue.CreateFromTensor<long>("input", text_array),
+        NamedOnnxValue.CreateFromTensor<long>("input_lengths", text_lengths_array),
+        NamedOnnxValue.CreateFromTensor<float>("scales", scales_array),
+        NamedOnnxValue.CreateFromTensor<long>("sid", sid)
     };
 
     // Create an InferenceSession from the Model Path.
