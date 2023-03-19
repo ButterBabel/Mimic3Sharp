@@ -216,7 +216,7 @@ void LoadOnnx(string model_dir)
     var text_lengths_array = new DenseTensor<long>(1);
     text_lengths_array[0] = phlist_ids.Length;
 
-    var scales_array = new DenseTensor<float>(3);// { noise_scale, length_scale, noise_w };
+    var scales_array = new DenseTensor<float>(3);
     scales_array[0] = (float)noise_scale;
     scales_array[1] = (float)length_scale;
     scales_array[2] = (float)noise_w;
@@ -245,31 +245,24 @@ void LoadOnnx(string model_dir)
             throw new InvalidOperationException("Unexpected ONNX output");
         }
 
-        //squeeze is unnecessary
-
-        var tf = new tensorflow();
-
         //audio_float_to_int16
         {
+            var tf = new tensorflow();
+
+            //squeeze is unnecessary
             using var audio_handle = DenseTensorToNDArray(onnxTensor, new Shape(sampleCount), TF_DataType.TF_FLOAT, out var audio);
 
             const float max_wav_value = 32767.0f;
             var absaudio = tf.abs(audio);
             var amaxaudio = tf.reduce_max(absaudio);
             var audio_norm = audio * (max_wav_value / tf.maximum(0.01f, amaxaudio));
-            audio_norm = clip_ops.clip_by_value(audio_norm, -max_wav_value, max_wav_value);
+            audio_norm = tf.clip_by_value(audio_norm, -max_wav_value, max_wav_value);
             audio_norm = tf.cast(audio_norm, TF_DataType.TF_INT16);
 
             using var afs = File.Create("test.wav");
             WriteWavStream(afs, audio_norm);
         }
     }
-
-    // From the Enumerable output create the inferenceResult by getting the First value and using the AsDictionary extension method of the NamedOnnxValue.
-    //var inferenceResult = output.First().AsDictionary<string, float>();
-
-    // Return the inference result as json.
-    //return inferenceResult;
 
     static void WriteWavStream(Stream stream, Tensorflow.Tensor tensor)
     {
