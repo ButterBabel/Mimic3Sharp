@@ -6,6 +6,7 @@ using Microsoft.ML.OnnxRuntime.Tensors;
 using Mimic3Sharp.eSpeak;
 using Mimic3Sharp.Vosk;
 using NAudio.Wave;
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -40,7 +41,7 @@ void RunVoskDemo(string model_name, string transcript)
     var stripper = new Regex(@"([\w'-]+)", RegexOptions.Compiled);
     var grammar = $"[{string.Join(", ", stripper.Matches(transcript).Select(x => $"\"{x}\""))}]".ToLowerInvariant();
     var vmodel = new VoskModel(model_name);
-    
+
     var result = vmodel.Recognize(File.OpenRead("test.wav"), 22050, grammar);
     Console.WriteLine(result?.Text ?? "FATAL: Vosk did not recognize any text");
 }
@@ -50,10 +51,12 @@ void RunVoskDemo(string model_name, string transcript)
 //    ;
 //}
 
-void LoadOnnx(string model_dir) {
+void LoadOnnx(string model_dir)
+{
     Dictionary<string, int> phonemes = File.ReadLines(Path.Join(model_dir, "phonemes.txt"))
         .Select(line => line.Split(' '))
-        .Select(arr => new {
+        .Select(arr => new
+        {
             id = int.Parse(arr[0]),
             //maluuba doesn't use 'COMBINING DOUBLE INVERTED BREVE' (U+0361)
             phoneme = arr[1].Replace("\u0361", null)
@@ -62,7 +65,8 @@ void LoadOnnx(string model_dir) {
 
     using var speakerReader = GetLjspeechReader(Path.Join(model_dir, "speaker_map.csv"));
     Dictionary<int, string> speakers = speakerReader
-        .GetRecords(new {
+        .GetRecords(new
+        {
             id = 0,
             model = "",
             speaker = ""
@@ -102,7 +106,8 @@ void LoadOnnx(string model_dir) {
     var result = eSpeakVoice.TextToPhonemes(prompt_fixup);
 
     Console.WriteLine("Phonemized: ");
-    foreach (var r in result) {
+    foreach (var r in result)
+    {
         Console.WriteLine("\t{0}", r);
     }
 
@@ -172,9 +177,11 @@ void LoadOnnx(string model_dir) {
     //phlist.Add(phonemes["^"]);
     //phlist.Add(phonemes["#"]);
     string sh = string.Join(null, result.Select(r => $"^#{r}#$"));//string.Join('·', result);//.Normalize(NormalizationForm.FormD);
-    while (sh.Length > 0) {
+    while (sh.Length > 0)
+    {
         //phoneme_map
-        switch (sh[0]) {
+        switch (sh[0])
+        {
             case '|':
                 sh = sh[1..];
                 phlist.Add(phonemes["·"]);
@@ -187,7 +194,8 @@ void LoadOnnx(string model_dir) {
         }
 
         var match = phonemes.OrderByDescending(ph => ph.Key.Length).Where(ph => sh.StartsWith(ph.Key, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-        if (match is { Key: null }) {
+        if (match is { Key: null })
+        {
             break;
         }
 
@@ -225,41 +233,36 @@ void LoadOnnx(string model_dir) {
     };
 
     // Create an InferenceSession from the Model Path.
-    float[] audio_buffer;
     {
         using var model = new InferenceSession(Path.Join(model_dir, "generator.onnx"));
 
         // Run session and send input data in to get inference output. Call ToList then get the Last item. Then use the AsEnumerable extension method to return the Value result as an Enumerable of NamedOnnxValue.
         using var outputs = model.Run(input);
 
-        var output = outputs.Last();
-        var onnxTensor = output.AsTensor<float>().ToDenseTensor();
-        var span = onnxTensor.Buffer.Span;
-        audio_buffer = span.ToArray();
-    }
+        if (outputs.Single() is not { Value: DenseTensor<float> onnxTensor } output
+         || onnxTensor.Dimensions is not [1, 1, var sampleCount])
+        {
+            throw new InvalidOperationException("Unexpected ONNX output");
+        }
 
-    var tf = new tensorflow();
-    var audio = np.squeeze(new NDArray(audio_buffer));
+        //squeeze is unnecessary
 
-    //audio_float_to_int16
-    {
-        const float max_wav_value = 32767.0f;
-        var absaudio = tf.abs(audio);
-        var amaxaudio = tf.reduce_max(absaudio);
-        var audio_norm = audio * (max_wav_value / tf.maximum(0.01f, amaxaudio));
-        audio_norm = clip_ops.clip_by_value(audio_norm, -max_wav_value, max_wav_value);
-        audio_norm = tf.cast(audio_norm, TF_DataType.TF_INT16);
+        var tf = new tensorflow();
 
-        audio = audio_norm.numpy().astype(np.int16);
-    }
+        //audio_float_to_int16
+        {
+            using var audio_handle = DenseTensorToNDArray(onnxTensor, new Shape(sampleCount), TF_DataType.TF_FLOAT, out var audio);
 
-    {
-        var audioBytes = audio.ToByteArray();
-        using var afs = File.Create("test.wav");
-        WaveFormat waveFormat = new WaveFormat(22050, 16, 1);
-        using var wfw = new WaveFileWriter(afs, waveFormat);
-        wfw.Write(audioBytes);
-        wfw.Flush();
+            const float max_wav_value = 32767.0f;
+            var absaudio = tf.abs(audio);
+            var amaxaudio = tf.reduce_max(absaudio);
+            var audio_norm = audio * (max_wav_value / tf.maximum(0.01f, amaxaudio));
+            audio_norm = clip_ops.clip_by_value(audio_norm, -max_wav_value, max_wav_value);
+            audio_norm = tf.cast(audio_norm, TF_DataType.TF_INT16);
+
+            using var afs = File.Create("test.wav");
+            WriteWavStream(afs, audio_norm);
+        }
     }
 
     // From the Enumerable output create the inferenceResult by getting the First value and using the AsDictionary extension method of the NamedOnnxValue.
@@ -267,9 +270,31 @@ void LoadOnnx(string model_dir) {
 
     // Return the inference result as json.
     //return inferenceResult;
+
+    static void WriteWavStream(Stream stream, Tensorflow.Tensor tensor)
+    {
+        WaveFormat waveFormat = new WaveFormat(rate: 22050, bits: 16, channels: 1);
+        using var wfw = new WaveFileWriter(stream, waveFormat);
+        TensorCopyTo(tensor, wfw);
+        wfw.Flush();
+    }
+
+    unsafe static void TensorCopyTo(Tensorflow.Tensor tensor, Stream stream)
+    {
+        ReadOnlySpan<byte> tensorSpan = new(tensor.buffer.ToPointer(), (int)tensor.bytesize);
+        stream.Write(tensorSpan);
+    }
+
+    unsafe static MemoryHandle DenseTensorToNDArray<T>(DenseTensor<T> tensor, Shape shape, TF_DataType type, out NDArray ndArray)
+    {
+        var pin = tensor.Buffer.Pin();
+        ndArray = new((nint)pin.Pointer, shape, type);
+        return pin;
+    }
 }
 
-void BannerlordToLjspeechFormat(string dir) {
+void BannerlordToLjspeechFormat(string dir)
+{
     const string voice_strings = @"C:\Games\Steam\steamapps\common\Mount & Blade II Bannerlord\Modules\SandBox\ModuleData\voice_strings.xml";
     using var fs = File.OpenRead(voice_strings);
     var doc = XDocument.Load(fs);
@@ -280,7 +305,8 @@ void BannerlordToLjspeechFormat(string dir) {
         .Select(attr => attr.Value)
         .Select(text => LocalizedTextRegex.Match(text))
         .Where(m => m.Success)
-        .Select(m => new {
+        .Select(m => new
+        {
             id = m.Groups[1].Value,
             text = m.Groups[2].Value
         })
@@ -288,12 +314,14 @@ void BannerlordToLjspeechFormat(string dir) {
 
     var voiceLines = Directory.EnumerateFiles(dir, "*.ogg");
     var linesWithText = voiceLines
-        .Select(path => new {
+        .Select(path => new
+        {
             path,
             id = Path.GetFileNameWithoutExtension(path).Split('_').Last()
         })
         .Where(a => lookup.Contains(a.id))
-        .Select(a => new {
+        .Select(a => new
+        {
             a.path,
             text = lookup[a.id].First()
         });
@@ -314,9 +342,11 @@ void BannerlordToLjspeechFormat(string dir) {
     //    transcription = a.text,
     //    normalized = a.text
     //}));
-    csv.WriteRecords(linesWithText.Select(a => new {
+    csv.WriteRecords(linesWithText.Select(a => new
+    {
         id = Path.GetFileNameWithoutExtension(a.path),
-        speaker = VoicePathRegex.Match(Path.GetFileName(a.path)) switch {
+        speaker = VoicePathRegex.Match(Path.GetFileName(a.path)) switch
+        {
             Match m when m is { Success: false } => throw new InvalidOperationException("Speaker identification: not identified from filename"),
             Match m when m.Groups is [_, var accentGroup, var genderGroup, var personaGroup, _] g => string.Join('_', accentGroup.Value, genderGroup.Value, personaGroup.Value),
             _ => throw new InvalidOperationException("Speaker identification: Expected groups not matched")
@@ -325,24 +355,29 @@ void BannerlordToLjspeechFormat(string dir) {
     }));
 }
 
-void VctkToLjspeechFormat(string dir) {
+void VctkToLjspeechFormat(string dir)
+{
     var txtFiles = Directory.EnumerateFiles(dir, "*.txt")
-        .Select(path => new {
+        .Select(path => new
+        {
             path,
             filename = Path.GetFileNameWithoutExtension(path),
         })
-        .Select(a => new {
+        .Select(a => new
+        {
             a.path,
             a.filename,
             speaker = a.filename[..a.filename.IndexOf('_')]
         });
 
     var wavFiles = Directory.EnumerateFiles(dir, "*.wav")
-        .Select(path => new {
+        .Select(path => new
+        {
             path,
             filename = Path.GetFileNameWithoutExtension(path),
         })
-        .Select(a => new {
+        .Select(a => new
+        {
             a.path,
             a.filename,
             speaker = a.filename[..a.filename.IndexOf('_')],
@@ -351,20 +386,23 @@ void VctkToLjspeechFormat(string dir) {
 
     var all = txtFiles
         .GroupJoin(wavFiles, txt => txt.filename, wav => wav.entry,
-            (txt, wavs) => new {
+            (txt, wavs) => new
+            {
                 txt,
                 wavs
             });
 
     using var csv = GetLjspeechWriter(Path.Join(dir, "metadata.csv"));
-    csv.WriteRecords(all.SelectMany(a => a.wavs, (a, wav) => new {
+    csv.WriteRecords(all.SelectMany(a => a.wavs, (a, wav) => new
+    {
         id = wav.filename,
         wav.speaker,
         text = File.ReadAllText(a.txt.path).Trim()
     }));
 }
 
-void LarynxTrainDatasetToSubfolders(string dir) {
+void LarynxTrainDatasetToSubfolders(string dir)
+{
     var datasetPath = Path.Join(dir, "dataset.jsonl");
     var datasetBakPath = Path.Join(dir, "dataset.jsonl.bak");
     File.Move(datasetPath, datasetBakPath);
@@ -374,7 +412,8 @@ void LarynxTrainDatasetToSubfolders(string dir) {
     using var writer = File.CreateText(datasetPath);
 
     var cacheFolder = Path.Join(dir, "cache", "22050");
-    foreach (var line in datasetLines) {
+    foreach (var line in datasetLines)
+    {
         var speaker = line["speaker"].GetValue<string>();
         var normPath = line["audio_norm_path"].GetValue<string>();
         var specPath = line["audio_spec_path"].GetValue<string>();
@@ -394,21 +433,24 @@ void LarynxTrainDatasetToSubfolders(string dir) {
     string FixupPath(string path) => Path.Join(dir, Path.GetRelativePath("../../training_vctk_with_bannerlord", path));
 }
 
-CsvConfiguration GetLjspeechCsvConfiguration() {
+CsvConfiguration GetLjspeechCsvConfiguration()
+{
     var config = new CsvConfiguration(CultureInfo.InvariantCulture);
     config.Delimiter = "|";
     config.HasHeaderRecord = false;
     return config;
 }
 
-CsvWriter GetLjspeechWriter(string path) {
+CsvWriter GetLjspeechWriter(string path)
+{
     var config = GetLjspeechCsvConfiguration();
     var ofs = new StreamWriter(path);
     var csv = new CsvWriter(ofs, config);
     return csv;
 }
 
-CsvReader GetLjspeechReader(string path) {
+CsvReader GetLjspeechReader(string path)
+{
     var config = GetLjspeechCsvConfiguration();
     var ofs = new StreamReader(path);
     var csv = new CsvReader(ofs, config);
