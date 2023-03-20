@@ -69,7 +69,10 @@ internal static partial class NativeMethods {
         }
         finally {
             // Cleanup - Perform required cleanup.
-            Utf8StringMarshaller.Free(__retVal_native);
+
+            //JZ: espeak_TextToPhonemes returns const char* -- DO NOT FREE
+            //Utf8StringMarshaller.Free(__retVal_native);
+
             Utf8StringMarshaller.Free(__text_native_orig);
         }
 
