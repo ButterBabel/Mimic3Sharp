@@ -4,14 +4,17 @@ using CsvHelper.Configuration;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Mimic3Sharp.eSpeak;
+using Mimic3Sharp.Rhubarb;
 using Mimic3Sharp.Vosk;
 using NAudio.Wave;
 using System.Buffers;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using System.Xml.Serialization;
 using Tensorflow;
 using Tensorflow.NumPy;
 using static Mimic3Sharp.Regexes;
@@ -29,21 +32,116 @@ Console.WriteLine("Hello, World!");
 
 //BannerlordToLjspeechFormat(@"S:\Games\Mount & Blade II Bannerlord _ beta 1.1.0\Modules\SandBox\ModuleData\Languages\VoicedLines\EN\PC");
 
-LoadOnnx(@"S:\Work\mimic3\en_US vctk_low\");
+LoadOnnx(@"S:\Work\mimic3\en_US vctk_low\", out var duration);
 ;
 
 RunVoskDemo(@"C:\Users\Zebedee\Downloads\vosk-model-small-en-us-0.15",
-    "The lords and the merchants, they sit in their lofty towers making grand decisions, but they don't see into the back alleys to know what plots are going on. They don't know where to find the debtor who won't pay his debt. They don't know where to find the wagging tongues starting rumors. So that's where I come in.");
+    "The lords and the merchants, they sit in their lofty towers making grand decisions, but they don't see into the back alleys to know what plots are going on. They don't know where to find the debtor who won't pay his debt. They don't know where to find the wagging tongues starting rumors. So that's where I come in.",
+    duration
+);
 ;
 
-void RunVoskDemo(string model_name, string transcript)
+void RunVoskDemo(string model_name, string transcript, TimeSpan duration)
 {
     var stripper = new Regex(@"([\w'-]+)", RegexOptions.Compiled);
     var grammar = $"[{string.Join(", ", stripper.Matches(transcript).Select(x => $"\"{x}\""))}]".ToLowerInvariant();
     var vmodel = new VoskModel(model_name);
 
-    var result = vmodel.Recognize(File.OpenRead("test.wav"), 22050, grammar);
-    Console.WriteLine(result?.Text ?? "FATAL: Vosk did not recognize any text");
+    if (vmodel.Recognize(File.OpenRead("test.wav"), 22050, grammar) is not VoskResult voskResult)
+    {
+        Console.WriteLine("FATAL: Vosk did not recognize any text");
+        return;
+    }
+    Console.WriteLine("Vosk detected text: {0}", voskResult.Text);
+
+    var arpabetToIpa = File.ReadLines(@"C:\Users\Zebedee\Downloads\arpabet-to-ipa.csv")
+        .Select(l => l.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        .Select(a => new
+        {
+            arpabet = a[0].ToLowerInvariant(),
+            ipa = a[1]
+        })
+        .ToDictionary(a => a.arpabet, a => a.ipa);
+
+    var arpabetToViseme = File.ReadLines(@"C:\Users\Zebedee\Downloads\arpabet-to-viseme.csv")
+        .Where(l => !l.StartsWith('#'))
+        .Select(l => l.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        .Select(a => new
+        {
+            arpabet = a[0],
+            viseme = a[1]
+        })
+        .ToDictionary(a => a.arpabet, a => a.viseme);
+
+    var ipaToVisemeMpb = arpabetToViseme
+        .ToDictionary(a => arpabetToIpa[a.Key], a => Enum.Parse<Mimic3Sharp.Rhubarb.Visemes.PrestonBlair>(a.Value));
+
+    var ipaToVisemesAlphabetic = ipaToVisemeMpb
+        .ToDictionary(a => a.Key, a => (Mimic3Sharp.Rhubarb.Visemes.Alphabetic)a.Value);
+
+    //eSpeakVoice.Initialize(@"C:\Program Files\eSpeak NG\libespeak-ng.dll");
+    //eSpeakVoice.SetVoiceByName("en-us");
+
+    var cueList = new List<rhubarbResultMouthCue>();
+    var rhubarb = new rhubarbResult()
+    {
+        metadata = new()
+        {
+            soundFile = Path.GetFullPath("test.wav"),
+            duration = (decimal)duration.TotalSeconds
+        },
+        mouthCues = cueList
+    };
+
+    foreach (var wordMatch in voskResult.Result)
+    {
+        List<Mimic3Sharp.Rhubarb.Visemes.Alphabetic> vislist = new();
+
+        var phones = eSpeakVoice.TextToPhonemes(wordMatch.Word).Single();
+        while (phones.Length > 0)
+        {
+            var match = ipaToVisemesAlphabetic.Where(kvp => phones.StartsWith(kvp.Key)).FirstOrDefault();
+            if (match is { Key: null })
+            {
+                if (phones[0] == 'ˈ' || phones[0] == 'ː')
+                {
+                    vislist.Add(Mimic3Sharp.Rhubarb.Visemes.Alphabetic.X);
+                    phones = phones[1..];
+                    continue;
+                }
+
+                Console.WriteLine("WARNING: unknown viseme for phone `{0}`", phones[0]);
+                phones = phones[1..];
+                continue;
+            }
+
+            vislist.Add(match.Value);
+            phones = phones[match.Key.Length..];
+        }
+
+        Decimal start = (decimal)wordMatch.Start;
+        Decimal end = (decimal)wordMatch.End;
+        Decimal phDuration = (end - start) / vislist.Count;
+        for (int i = 0; i < vislist.Count; i++)
+        {
+            var vis = vislist[i];
+            cueList.Add(new()
+            {
+                start = start + (phDuration * i),
+                end = i + 1 == vislist.Count ? end : start + (phDuration * (i + 1)),
+                Value = $"{vis}"
+            });
+
+        }
+    }
+
+    const string rhubarbFilename = "test.xml";
+
+    var seri = new XmlSerializer(typeof(rhubarbResult));
+    using var xfs = File.Create(rhubarbFilename);
+    seri.Serialize(xfs, rhubarb);
+
+    Console.WriteLine("Wrote Rhubarb file {0} containing {1} cue records", rhubarbFilename, cueList.Count);
 }
 
 //void ForceAlignSTT(string modelPath) {
@@ -51,7 +149,7 @@ void RunVoskDemo(string model_name, string transcript)
 //    ;
 //}
 
-void LoadOnnx(string model_dir)
+void LoadOnnx(string model_dir, out TimeSpan duration)
 {
     Dictionary<string, int> phonemes = File.ReadLines(Path.Join(model_dir, "phonemes.txt"))
         .Select(line => line.Split(' '))
@@ -95,6 +193,7 @@ void LoadOnnx(string model_dir)
     //const string prompt = "Blessed be the Gods, happened that my cousin Aed was in the guard. He sprung me that night from the prison, and together we went roaming round the country. But a passing magistrate decided he weren't parting with his purse, and pulled his blade rather than handing it over like a sensible lad. I took him down, but now before my poor Aed was butchered. See now the price of woman's ingratitude?";
     //const string prompt = "Because I loved my mother, and because I was faster and stronger than the boys, I did all that she said I would do. Of those born in my year, I was the first to kill an enemy. My mother boasted even more, so that the other women came to hate her. They turned us all out of our encampment. We were forced to sell our lands and our slaves, as we could not take them with us, and we were given but a fraction of the price. All we had was our sheep. Of course raiders found us soon enough, and killed my mother, and took our flock. I escaped.";
     const string prompt = "The lords and the merchants, they sit in their lofty towers making grand decisions, but they don't see into the back alleys to know what plots are going on. They don't know where to find the debtor who won't pay his debt. They don't know where to find the wagging tongues starting rumors. So that's where I come in.";
+    //const string prompt = "He wound it around the wound, saying \"I read it was $10 to read.\"";
     Console.WriteLine("Prompt: {0}", prompt);
 
     eSpeakVoice.Initialize(@"C:\Program Files\eSpeak NG\libespeak-ng.dll");
@@ -232,16 +331,15 @@ void LoadOnnx(string model_dir)
         NamedOnnxValue.CreateFromTensor<long>("sid", sid)
     };
 
-    // Create an InferenceSession from the Model Path.
     {
         using var model = new InferenceSession(Path.Join(model_dir, "generator.onnx"));
 
-        // Run session and send input data in to get inference output. Call ToList then get the Last item. Then use the AsEnumerable extension method to return the Value result as an Enumerable of NamedOnnxValue.
         using var outputs = model.Run(input);
 
         if (outputs.Single() is not { Value: DenseTensor<float> onnxTensor } output
          || onnxTensor.Dimensions is not [1, 1, var sampleCount])
         {
+            //TODO: throwhelper
             throw new InvalidOperationException("Unexpected ONNX output");
         }
 
@@ -259,21 +357,26 @@ void LoadOnnx(string model_dir)
             audio_norm = tf.clip_by_value(audio_norm, -max_wav_value, max_wav_value);
             audio_norm = tf.cast(audio_norm, TF_DataType.TF_INT16);
 
-            using var afs = File.Create("test.wav");
-            WriteWavStream(afs, audio_norm);
+            const string wavFilename = "test.wav";
+
+            using var afs = File.Create(wavFilename);
+            duration = WriteWavStream(afs, audio_norm);
+            Console.WriteLine("Wrote {0} with duration {1}", wavFilename, duration);
         }
     }
 
-    static void WriteWavStream(Stream stream, Tensorflow.Tensor tensor)
+    static TimeSpan WriteWavStream(Stream stream, Tensorflow.Tensor tensor)
     {
         WaveFormat waveFormat = new WaveFormat(rate: 22050, bits: 16, channels: 1);
         using var wfw = new WaveFileWriter(stream, waveFormat);
         TensorCopyTo(tensor, wfw);
         wfw.Flush();
+        return wfw.TotalTime;
     }
 
     unsafe static void TensorCopyTo(Tensorflow.Tensor tensor, Stream stream)
     {
+        Debug.Assert(tensor.bytesize <= int.MaxValue);
         ReadOnlySpan<byte> tensorSpan = new(tensor.buffer.ToPointer(), (int)tensor.bytesize);
         stream.Write(tensorSpan);
     }
