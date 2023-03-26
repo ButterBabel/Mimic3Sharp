@@ -124,6 +124,7 @@ void RunVoskDemo(string model_name, string transcript, TimeSpan duration)
                 }
 
                 Console.WriteLine("WARNING: unknown viseme for phone `{0}`", phones[0]);
+                vislist.Add(Mimic3Sharp.Rhubarb.Visemes.Alphabetic.B);
                 phones = phones[1..];
                 continue;
             }
@@ -131,6 +132,7 @@ void RunVoskDemo(string model_name, string transcript, TimeSpan duration)
             vislist.Add(match.Value);
             phones = phones[match.Key.Length..];
         }
+        vislist.Add(Mimic3Sharp.Rhubarb.Visemes.Alphabetic.X);
 
         Decimal start = (decimal)wordMatch.Start;
         Decimal end = (decimal)wordMatch.End;
