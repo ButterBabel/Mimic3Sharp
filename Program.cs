@@ -20,7 +20,20 @@ using Tensorflow.NumPy;
 using static Mimic3Sharp.Regexes;
 
 Console.OutputEncoding = Encoding.UTF8;
-Console.WriteLine("Hello, World!");
+
+var speaker = args.ElementAtOrDefault(0);
+var prompt = args.ElementAtOrDefault(1);
+
+//const string dprompt = """But this cousin... I would not marry that man! He was a boor, a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.""";
+//const string dprompt = "I think it's very nice out today.";
+//const string dprompt = "Despite the fact I hate maths, I quite like learning about fractions.";
+//const string dprompt = "Roger roger, raise the ragged, rhotic career of a better butter bandit.";
+//const string dprompt = "My parents were merchants, and I inherited a share of their workshops and camels. But banditry and the fortunes of trade ruined me, which is also common, and now I must make my money some other way.";
+//const string dprompt = "Blessed be the Gods, happened that my cousin Aed was in the guard. He sprung me that night from the prison, and together we went roaming round the country. But a passing magistrate decided he weren't parting with his purse, and pulled his blade rather than handing it over like a sensible lad. I took him down, but now before my poor Aed was butchered. See now the price of woman's ingratitude?";
+//const string dprompt = "Because I loved my mother, and because I was faster and stronger than the boys, I did all that she said I would do. Of those born in my year, I was the first to kill an enemy. My mother boasted even more, so that the other women came to hate her. They turned us all out of our encampment. We were forced to sell our lands and our slaves, as we could not take them with us, and we were given but a fraction of the price. All we had was our sheep. Of course raiders found us soon enough, and killed my mother, and took our flock. I escaped.";
+const string dprompt = "The lords and the merchants, they sit in their lofty towers making grand decisions, but they don't see into the back alleys to know what plots are going on. They don't know where to find the debtor who won't pay his debt. They don't know where to find the wagging tongues starting rumors. So that's where I come in.";
+//const string dprompt = "He wound it around the wound, saying \"I read it was $10 to read.\"";
+prompt ??= dprompt;
 
 //ForceAlignSTT(@"C:\Users\Zebedee\Downloads\model.tflite");
 
@@ -32,11 +45,11 @@ Console.WriteLine("Hello, World!");
 
 //BannerlordToLjspeechFormat(@"S:\Games\Mount & Blade II Bannerlord _ beta 1.1.0\Modules\SandBox\ModuleData\Languages\VoicedLines\EN\PC");
 
-LoadOnnx(@"S:\Work\mimic3\en_US vctk_low\", out var duration);
+LoadOnnx(@"S:\Work\mimic3\en_US vctk_low\", speaker, prompt, out var duration);
 ;
 
 RunVoskDemo(@"C:\Users\Zebedee\Downloads\vosk-model-small-en-us-0.15",
-    "The lords and the merchants, they sit in their lofty towers making grand decisions, but they don't see into the back alleys to know what plots are going on. They don't know where to find the debtor who won't pay his debt. They don't know where to find the wagging tongues starting rumors. So that's where I come in.",
+    prompt,
     duration
 );
 ;
@@ -149,7 +162,7 @@ void RunVoskDemo(string model_name, string transcript, TimeSpan duration)
 //    ;
 //}
 
-void LoadOnnx(string model_dir, out TimeSpan duration)
+void LoadOnnx(string model_dir, string speaker, string prompt, out TimeSpan duration)
 {
     Dictionary<string, int> phonemes = File.ReadLines(Path.Join(model_dir, "phonemes.txt"))
         .Select(line => line.Split(' '))
@@ -185,15 +198,6 @@ void LoadOnnx(string model_dir, out TimeSpan duration)
         noise_w = inference["noise_w"].GetValue<double>();
     }
 
-    //const string prompt = """But this cousin... I would not marry that man! He was a boor, a drunk - never there was a night that he did not reek of wine, never a morning that he did not reek of vomit! But a cataphract's daughter is not some chit you can marry against her will. I took a horse from my father's estate - my horse, legally - his old sword, and rode off.""";
-    //const string prompt = "I think it's very nice out today.";
-    //const string prompt = "Despite the fact I hate maths, I quite like learning about fractions.";
-    //const string prompt = "Roger roger, raise the ragged, rhotic career of a better butter bandit.";
-    //const string prompt = "My parents were merchants, and I inherited a share of their workshops and camels. But banditry and the fortunes of trade ruined me, which is also common, and now I must make my money some other way.";
-    //const string prompt = "Blessed be the Gods, happened that my cousin Aed was in the guard. He sprung me that night from the prison, and together we went roaming round the country. But a passing magistrate decided he weren't parting with his purse, and pulled his blade rather than handing it over like a sensible lad. I took him down, but now before my poor Aed was butchered. See now the price of woman's ingratitude?";
-    //const string prompt = "Because I loved my mother, and because I was faster and stronger than the boys, I did all that she said I would do. Of those born in my year, I was the first to kill an enemy. My mother boasted even more, so that the other women came to hate her. They turned us all out of our encampment. We were forced to sell our lands and our slaves, as we could not take them with us, and we were given but a fraction of the price. All we had was our sheep. Of course raiders found us soon enough, and killed my mother, and took our flock. I escaped.";
-    const string prompt = "The lords and the merchants, they sit in their lofty towers making grand decisions, but they don't see into the back alleys to know what plots are going on. They don't know where to find the debtor who won't pay his debt. They don't know where to find the wagging tongues starting rumors. So that's where I come in.";
-    //const string prompt = "He wound it around the wound, saying \"I read it was $10 to read.\"";
     Console.WriteLine("Prompt: {0}", prompt);
 
     eSpeakVoice.Initialize(@"C:\Program Files\eSpeak NG\libespeak-ng.dll");
@@ -218,7 +222,9 @@ void LoadOnnx(string model_dir, out TimeSpan duration)
 
     long speaker_id;
     {
-        speaker_id = Random.Shared.Next(speakers.Keys.Max());
+        speaker_id = speaker is not null
+            ? speakers.Where(kvp => kvp.Value == speaker).Select(kvp => kvp.Key).Single()
+            : Random.Shared.Next(speakers.Keys.Max());
         Console.WriteLine("Using speaker id {0}: {1}", speaker_id, speakers[(int)speaker_id]);
     }
 
