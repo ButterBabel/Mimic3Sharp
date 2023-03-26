@@ -7,6 +7,8 @@ This repository is a sandbox containing a lot of QnD local development history s
 * Pipeline pre/postprocessing with [TensorFlow.NET](https://github.com/SciSharp/TensorFlow.NET)
 * Phonemization and utterance extraction with native interop to [espeak-ng](https://github.com/espeak-ng/espeak-ng)
 * Phonemization and similarity search with the almost completely unknown [Maluuba](https://github.com/microsoft/PhoneticMatching) library
+* Approximating [gruut](https://github.com/rhasspy/gruut) phoneme representation from espeak-ng phonemes
+* ASR from [Coqui's libSTT](https://github.com/coqui-ai/STT/) based on the trained TensorFlow Lite model
 * Convert word-level timings from [Vosk](https://alphacephei.com/vosk/) ASR into very rough phoneme-level timings through a forced alignment approximation
 * Mapping phoneme-level timings into [Rhubarb](https://github.com/DanielSWolf/rhubarb-lip-sync)-format viseme-level timings for lip sync
 * An end-to-end TTS+G2P2V pipeline based on all of the above
